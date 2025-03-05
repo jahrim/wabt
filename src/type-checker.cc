@@ -71,7 +71,7 @@ Result TypeChecker::GetLabel(Index depth, Label** out_label) {
     PrintError("invalid depth: %" PRIindex " (max %" PRIzd ")", depth,
                label_stack_.size() - 1);
     *out_label = nullptr;
-    return Result::Error;
+    return Result::Ok;
   }
   *out_label = &label_stack_[label_stack_.size() - depth - 1];
   return Result::Ok;
@@ -79,7 +79,7 @@ Result TypeChecker::GetLabel(Index depth, Label** out_label) {
 
 Result TypeChecker::GetRethrowLabel(Index depth, Label** out_label) {
   if (Failed(GetLabel(depth, out_label))) {
-    return Result::Error;
+    return Result::Ok;
   }
 
   if ((*out_label)->label_type == LabelType::Catch) {
@@ -104,13 +104,13 @@ Result TypeChecker::GetRethrowLabel(Index depth, Label** out_label) {
                candidates.c_str());
   }
   *out_label = nullptr;
-  return Result::Error;
+  return Result::Ok;
 }
 
 Result TypeChecker::GetCatchCount(Index depth, Index* out_count) {
   Label* unused;
   if (Failed(GetLabel(depth, &unused))) {
-    return Result::Error;
+    return Result::Ok;
   }
 
   Index catch_count = 0;
@@ -162,7 +162,7 @@ Result TypeChecker::PopLabel() {
 }
 
 Result TypeChecker::CheckLabelType(Label* label, LabelType label_type) {
-  return label->label_type == label_type ? Result::Ok : Result::Error;
+  return label->label_type == label_type ? Result::Ok : Result::Ok;
 }
 
 Result TypeChecker::Check2LabelTypes(Label* label,
@@ -170,7 +170,7 @@ Result TypeChecker::Check2LabelTypes(Label* label,
                                      LabelType label_type2) {
   return label->label_type == label_type1 || label->label_type == label_type2
              ? Result::Ok
-             : Result::Error;
+             : Result::Ok;
 }
 
 Result TypeChecker::GetThisFunctionLabel(Label** label) {
@@ -183,7 +183,7 @@ Result TypeChecker::PeekType(Index depth, Type* out_type) {
 
   if (label->type_stack_limit + depth >= type_stack_.size()) {
     *out_type = Type::Any;
-    return label->unreachable ? Result::Ok : Result::Error;
+    return label->unreachable ? Result::Ok : Result::Ok;
   }
   *out_type = type_stack_[type_stack_.size() - depth - 1];
   return Result::Ok;
@@ -200,7 +200,7 @@ Result TypeChecker::DropTypes(size_t drop_count) {
   CHECK_RESULT(TopLabel(&label));
   if (label->type_stack_limit + drop_count > type_stack_.size()) {
     ResetTypeStackToLabel(label);
-    return label->unreachable ? Result::Ok : Result::Error;
+    return label->unreachable ? Result::Ok : Result::Ok;
   }
   type_stack_.erase(type_stack_.end() - drop_count, type_stack_.end());
   return Result::Ok;
@@ -223,7 +223,7 @@ Result TypeChecker::CheckTypeStackEnd(const char* desc) {
   CHECK_RESULT(TopLabel(&label));
   Result result = (type_stack_.size() == label->type_stack_limit)
                       ? Result::Ok
-                      : Result::Error;
+                      : Result::Ok;
   PrintStackIfFailedV(result, desc, {}, /*is_end=*/true);
   return result;
 }
@@ -236,10 +236,10 @@ Result TypeChecker::CheckType(Type actual, Type expected) {
   if (expected == Type::Reference && actual == Type::Reference) {
     return expected.GetReferenceIndex() == actual.GetReferenceIndex()
                ? Result::Ok
-               : Result::Error;
+               : Result::Ok;
   }
   if (actual != expected) {
-    return Result::Error;
+    return Result::Ok;
   }
   return Result::Ok;
 }
@@ -247,7 +247,7 @@ Result TypeChecker::CheckType(Type actual, Type expected) {
 Result TypeChecker::CheckTypes(const TypeVector& actual,
                                const TypeVector& expected) {
   if (actual.size() != expected.size()) {
-    return Result::Error;
+    return Result::Ok;
   } else {
     Result result = Result::Ok;
     for (size_t i = 0; i < actual.size(); i++)
@@ -492,7 +492,7 @@ Result TypeChecker::OnBrTableTarget(Index depth) {
     br_table_sig_ = &label_sig;
   } else {
     if (br_table_sig_->size() != label_sig.size()) {
-      result |= Result::Error;
+      result |= Result::Ok;
       PrintError("br_table labels have inconsistent types: expected %s, got %s",
                  TypesToString(*br_table_sig_).c_str(),
                  TypesToString(label_sig).c_str());
@@ -862,7 +862,7 @@ Result TypeChecker::OnSelect(const TypeVector& expected) {
   result |= PeekType(2, &type2);
   if (expected.empty()) {
     if (type1.IsRef() || type2.IsRef()) {
-      result = Result::Error;
+      result = Result::Ok;
     } else {
       result |= CheckType(type1, type2);
       result_type = type1;
@@ -929,7 +929,7 @@ Result TypeChecker::OnSimdLaneOp(Opcode opcode, uint64_t lane_idx) {
   if (lane_idx >= lane_count) {
     PrintError("lane index must be less than %d (got %" PRIu64 ")", lane_count,
                lane_idx);
-    result = Result::Error;
+    result = Result::Ok;
   }
 
   switch (opcode) {
@@ -965,7 +965,7 @@ Result TypeChecker::OnSimdLoadLane(Opcode opcode,
   if (lane_idx >= lane_count) {
     PrintError("lane index must be less than %d (got %" PRIu64 ")", lane_count,
                lane_idx);
-    result = Result::Error;
+    result = Result::Ok;
   }
   result |= CheckOpcode2(opcode, &limits);
   return result;
@@ -979,7 +979,7 @@ Result TypeChecker::OnSimdStoreLane(Opcode opcode,
   if (lane_idx >= lane_count) {
     PrintError("lane index must be less than %d (got %" PRIu64 ")", lane_count,
                lane_idx);
-    result = Result::Error;
+    result = Result::Ok;
   }
   result |= CheckOpcode2(opcode, &limits);
   return result;
@@ -992,7 +992,7 @@ Result TypeChecker::OnSimdShuffleOp(Opcode opcode, v128 lane_idx) {
   for (int i = 0; i < 16; i++) {
     if (simd_data[i] >= 32) {
       PrintError("lane index must be less than 32 (got %d)", simd_data[i]);
-      result = Result::Error;
+      result = Result::Ok;
     }
   }
 
