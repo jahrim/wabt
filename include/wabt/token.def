@@ -158,8 +158,11 @@ WABT_TOKEN(Try, "try")
 WABT_TOKEN(TryTable, "try_table")
 WABT_TOKEN(Unary, "UNARY")
 WABT_TOKEN(Unreachable, "unreachable")
+/* TODO: Added */
+WABT_TOKEN(Experimental, "experimental") 
+
 WABT_TOKEN_FIRST(Opcode, AtomicFence)
-WABT_TOKEN_LAST(Opcode, Unreachable)
+WABT_TOKEN_LAST(Opcode, Experimental)    /* TODO: Changed this one */
 
 /* Tokens with string data. */
 WABT_TOKEN(AlignEqNat, "align=")

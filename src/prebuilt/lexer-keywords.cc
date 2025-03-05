@@ -158,7 +158,7 @@ Perfect_Hash::InWordSet (const char *str, size_t len)
 {
   enum
     {
-      TOTAL_KEYWORDS = 601,
+      TOTAL_KEYWORDS = 602,
       MIN_WORD_LENGTH = 2,
       MAX_WORD_LENGTH = 35,
       MIN_HASH_VALUE = 37,
@@ -1509,7 +1509,8 @@ Perfect_Hash::InWordSet (const char *str, size_t len)
       {""}, {""}, {""}, {""}, {""},
 #line 370 "src/lexer-keywords.txt"
       {"i32x4.extend_low_i16x8_u", TokenType::Unary, Opcode::I32X4ExtendLowI16X8U},
-      {""},
+#line 621 "src/lexer-keywords.txt"
+      {"experimental", TokenType::Unary, Opcode::Experimental  /* TODO: added */},
 #line 369 "src/lexer-keywords.txt"
       {"i32x4.extend_low_i16x8_s", TokenType::Unary, Opcode::I32X4ExtendLowI16X8S},
       {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
