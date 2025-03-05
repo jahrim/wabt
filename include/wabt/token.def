@@ -159,8 +159,14 @@ WABT_TOKEN(TryTable, "try_table")
 WABT_TOKEN(Unary, "UNARY")
 WABT_TOKEN(Unreachable, "unreachable")
 /* TODO: Added */
+WABT_TOKEN(LoopN, "loopn")
+WABT_TOKEN(BeginFunMacro, "beginfm")
+WABT_TOKEN(EndFunMacro, "endfm")
+WABT_TOKEN(CallFunMacro, "callfm")
+WABT_TOKEN(Copy, "copy")
+WABT_TOKEN(I32Mod, "i32.mod")
+WABT_TOKEN(I32Power, "i32.pow")
 WABT_TOKEN(Experimental, "experimental") 
-
 WABT_TOKEN_FIRST(Opcode, AtomicFence)
 WABT_TOKEN_LAST(Opcode, Experimental)    /* TODO: Changed this one */
 
