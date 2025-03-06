@@ -22,132 +22,143 @@ var examples = [
   (func (export "main") (result i32)
     ;; Instruction ;; Stack ;; Explanation
     i32.const 1    ;; [1]   ;; push an i32 with value 1
-    i32.const 2    ;; [2 1] ;; push an i32 with value 2
-    i32.add        ;; [3]   ;; pop two i32s, sum them, and push the result
+    return
   ))
 `,
   },
   {
-    name: 'main',
+    name: 'I32Add',
     contents:
 `(module
   (func (export "main") (result i32)
     ;; Instruction ;; Stack ;; Explanation
     i32.const 1    ;; [1]   ;; push an i32 with value 1
     i32.const 2    ;; [2 1] ;; push an i32 with value 2
-    i32.add        ;; [3]   ;; pop two i32s, sum them, and push the result
+    i32.add        ;; [3]   ;; pop y:i32 and x:i32; push x + y
+    return
   ))
 `,
   },
   {
-    name: 'empty',
-    contents: '(module)',
-  },
-  {
-    name: 'simple',
+    name: 'I32Sub',
     contents:
 `(module
-  (func (export "addTwo") (param i32 i32) (result i32)
-    local.get 0
-    local.get 1
-    i32.add))
-`
-  },
-
-  {
-    name: 'factorial',
-    contents:
-`(module
-  (func $fac (export "fac") (param f64) (result f64)
-    local.get 0
-    f64.const 1
-    f64.lt
-    if (result f64)
-      f64.const 1
-    else
-      local.get 0
-      local.get 0
-      f64.const 1
-      f64.sub
-      call $fac
-      f64.mul
-    end))
-`
-  },
-
-  {
-    name: 'stuff',
-    contents:
-`(module
-  (import "foo" "bar" (func (param f32)))
-  (memory (data "hi"))
-  (type (func (param i32) (result i32)))
-  (start 1)
-  (table 0 1 funcref)
-  (func)
-  (func (type 1)
-    i32.const 42
-    drop)
-  (export "e" (func 1)))
+  (func (export "main") (result i32)
+    ;; Instruction ;; Stack ;; Explanation
+    i32.const 1    ;; [1]   ;; push an i32 with value 1
+    i32.const 2    ;; [2 1] ;; push an i32 with value 2
+    i32.sub        ;; [-1]  ;; pop y:i32 and x:i32; push x - y
+    return
+  ))
 `,
   },
-
   {
-    name: 'mutable globals',
+    name: 'I32Mod',
     contents:
 `(module
-  (import "env" "g" (global (mut i32)))
-  (func (export "f")
-    i32.const 100
-    global.set 0))
+  (func (export "main") (result i32)
+    ;; Instruction ;; Stack ;; Explanation
+    i32.const 9    ;; [9]   ;; push an i32 with value 9
+    i32.const 5    ;; [5 9] ;; push an i32 with value 5
+    i32.mod        ;; [4]   ;; pop y:i32 and x:i32; push x % y
+    i32.const 3    ;; [3 4] ;; push an i32 with value 3
+    i32.mod        ;; [1]   ;; pop y:i32 and x:i32; push x % y
+    return
+  ))
 `,
   },
-
   {
-    name: "saturating float-to-int",
+    name: 'I32ModBy0',
     contents:
 `(module
-  (func (export "f") (param f32) (result i32)
-    local.get 0
-    i32.trunc_sat_f32_s))`,
-  },
-
-  {
-    name: "sign extension",
-    contents:
-`(module
-  (func (export "f") (param i32) (result i32)
-    local.get 0
-    i32.extend8_s))
+  (func (export "main") (result i32)
+    ;; Instruction ;; Stack ;; Explanation
+    i32.const 9    ;; [9]   ;; push an i32 with value 9
+    i32.const 0    ;; [0 9] ;; push an i32 with value 0
+    i32.mod        ;; X     ;; error: divide by zero
+    return
+  ))
 `,
   },
-
   {
-    name: "multi value",
+    name: 'I32Pow',
     contents:
 `(module
-  (func $swap (param i32 i32) (result i32 i32)
-    local.get 1
-    local.get 0)
-
-  (func (export "reverseSub") (param i32 i32) (result i32)
-    local.get 0
-    local.get 1
-    call $swap
-    i32.sub))
+  (func (export "main") (result i32)
+    ;; Instruction ;; Stack ;; Explanation
+    i32.const 3    ;; [3]   ;; push an i32 with value 3
+    i32.const 2    ;; [2 3] ;; push an i32 with value 2
+    i32.pow        ;; [9]   ;; pop y:i32 and x:i32; push x^y
+    return
+  ))
 `,
   },
-
   {
-    name: "bulk memory",
+    name: 'I32PowBy0',
     contents:
 `(module
-  (memory (export "mem") 1)
-  (func (export "fill") (param i32 i32 i32)
-    local.get 0
-    local.get 1
-    local.get 2
-    memory.fill))
+  (func (export "main") (result i32)
+    ;; Instruction ;; Stack ;; Explanation
+    i32.const 3    ;; [3]   ;; push an i32 with value 3
+    i32.const 0    ;; [0 3] ;; push an i32 with value 0
+    i32.pow        ;; [1]   ;; pop y:i32 and x:i32; push x^y
+    return
+  ))
 `,
-  }
+  },
+  {
+    name: 'Copy',
+    contents:
+`(module
+  (func (export "main") (result i32)
+    ;; Instruction ;; Stack ;; Explanation
+    i32.const 3    ;; [3]   ;; push an i32 with value 3
+    copy           ;; [3 3] ;; duplicate the top of the stack
+    i32.add        ;; [6]   ;; pop y:i32 and x:i32; push x + y
+    copy           ;; [6 6] ;; duplicate the top of the stack
+    i32.add        ;; [12]  ;; pop y:i32 and x:i32; push x + y
+    return
+  ))
+`,
+  },
+  {
+    name: 'LoopN',
+    contents:
+`(module
+  (func (export "main") (result i32)
+    ;; Instruction ;; Stack       ;; Explanation
+    i32.const 1    ;; [1]         ;; push an i32 with value 1
+    i32.const 2    ;; [2 1]       ;; push an i32 with value 2
+    i32.const 3    ;; [3 2 1]     ;; push an i32 with value 3
+    i32.const 4    ;; [4 3 2 1]   ;; push an i32 with value 4
+    i32.const 3    ;; [3 4 3 2 1] ;; push an i32 with value 3
+    loopn          ;; [4 3 2 1]   ;; pop x:i32; execute the following instruction x times
+    i32.add        ;; [10]        
+    return
+  ))
+`,
+  },
+  {
+    name: 'FunMacro',
+    contents:
+`(module
+  (func (export "main") (result i32)
+    ;; Instruction ;; Stack       ;; Explanation
+    i32.const 0    ;; [0]         ;; push an i32 with value 0
+    beginfm        ;; []          ;; pop x:i32; create a new global FunMacro x
+    copy           ;; []          ;; 
+    i32.add        ;; []          ;; 
+    endfm          ;; []          ;; end of body of FunMacro x
+
+    i32.const 2    ;; [2]         ;; push an i32 with value 2
+    i32.const 0    ;; [0 2]       ;; push an i32 with value 0
+    callfm         ;; [4]         ;; pop x:i32; execute body of FunMacro x
+    i32.const 0    ;; [0 4]       ;; push an i32 with value 0
+    callfm         ;; [8]         ;; pop x:i32; execute body of FunMacro x
+    i32.const 0    ;; [0 8]       ;; push an i32 with value 0
+    callfm         ;; [16]        ;; pop x:i32; execute body of FunMacro x
+    return
+  ))
+`,
+  },
 ];
