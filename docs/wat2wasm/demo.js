@@ -14,27 +14,24 @@
  * limitations under the License.
  */
 Split(["#top-left", "#top-right"]);
-Split(["#bottom-left", "#bottom-right"]);
-
-Split(["#top-row", "#bottom-row"], {
-  direction: 'vertical'
-});
 
 var features = {};
 
 WabtModule().then(function(wabt) {
 
 var kCompileMinMS = 100;
+var outputShowBase16 = false;
 var outputShowBase64 = false;
 var outputLog;
+var outputBase16;
 var outputBase64;
 
 var outputEl = document.getElementById('output');
-var jsLogEl = document.getElementById('js_log');
 var selectEl = document.getElementById('select');
 var downloadEl = document.getElementById('download');
 var downloadLink = document.getElementById('downloadLink');
 var buildLogEl = document.getElementById('buildLog');
+var base16El = document.getElementById('base16');
 var base64El = document.getElementById('base64');
 var binaryBuffer = null;
 var binaryBlobUrl = null;
@@ -49,27 +46,13 @@ for (const [f, v] of Object.entries(wabt.FEATURES)) {
   });
 }
 
-var wasmInstance = null;
-
 var wrappedConsole = Object.create(console);
-
-wrappedConsole.log = (...args) => {
-  let line = args.map(String).join('') + '\n';
-  jsLogEl.textContent += line;
-  console.log(...args);
-}
+wrappedConsole.log = (...args) => { console.log(...args); }
 
 var watEditor = CodeMirror((elt) => {
   document.getElementById('top-left').appendChild(elt);
 }, {
   mode: 'wast',
-  lineNumbers: true,
-});
-
-var jsEditor = CodeMirror((elt) => {
-  document.getElementById('bottom-left').appendChild(elt);
-}, {
-  mode: 'javascript',
   lineNumbers: true,
 });
 
@@ -94,11 +77,12 @@ function debounce(f, wait) {
 
 function compile() {
   outputLog = '';
+  outputBase16 = 'Error occured, base16 output is not available';
   outputBase64 = 'Error occured, base64 output is not available';
 
   var binaryOutput;
   try {
-    var module = wabt.parseWat('test.wast', watEditor.getValue(), features);
+    var module = wabt.parseWat('main.wast', watEditor.getValue(), features);
     module.resolveNames();
     module.validate(features);
     var binaryOutput = module.toBinary({log: true, write_debug_names:true});
@@ -106,6 +90,11 @@ function compile() {
     binaryBuffer = binaryOutput.buffer;
     // binaryBuffer is a Uint8Array, so we need to convert it to a string to use btoa
     // https://stackoverflow.com/questions/12710001/how-to-convert-uint8-array-to-base64-encoded-string
+    outputBase16 = 
+      // convert Uint8Array to hex string
+      Array.from(binaryBuffer).map(b => b.toString(16).padStart(2, '0')).join(' ')
+      // add a newline after 10 whitespaces
+      .replace(/((?:\S+\s+){10})/g, '$1\n');
     outputBase64 = btoa(String.fromCharCode.apply(null, binaryBuffer));
 
     var blob = new Blob([binaryOutput.buffer]);
@@ -120,32 +109,19 @@ function compile() {
     downloadEl.classList.add('disabled');
   } finally {
     if (module) module.destroy();
-    outputEl.textContent = outputShowBase64 ? outputBase64 : outputLog;
-  }
-}
-
-function run() {
-  jsLogEl.textContent = '';
-  if (binaryBuffer === null) return;
-  try {
-    let wasm = new WebAssembly.Module(binaryBuffer);
-    let js = jsEditor.getValue();
-    let fn = new Function('wasmModule', 'console', js + '//# sourceURL=demo.js');
-    fn(wasm, wrappedConsole);
-  } catch (e) {
-    jsLogEl.textContent += String(e);
+    let visibleOutput = outputLog
+    if (outputShowBase16) { visibleOutput = outputBase16; }
+    if (outputShowBase64) { visibleOutput = outputBase64; }
+    outputEl.textContent = visibleOutput;
   }
 }
 
 var onWatChange = debounce(compile, kCompileMinMS);
-var onJsChange = debounce(run, kCompileMinMS);
 
 function setExample(index) {
   var example = examples[index];
   watEditor.setValue(example.contents);
   onWatChange();
-  jsEditor.setValue(example.js);
-  onJsChange();
 }
 
 function onSelectChanged(e) {
@@ -163,24 +139,37 @@ function onDownloadClicked(e) {
 }
 
 function onBuildLogClicked(e) {
+  outputShowBase16 = false;
   outputShowBase64 = false;
   outputEl.textContent = outputLog;
   buildLogEl.style.textDecoration = 'underline';
+  base16El.style.textDecoration = 'none';
+  base64El.style.textDecoration = 'none';
+}
+
+function onBase16Clicked(e) {
+  outputShowBase16 = true;
+  outputShowBase64 = false;
+  outputEl.textContent = outputBase16;
+  buildLogEl.style.textDecoration = 'none';
+  base16El.style.textDecoration = 'underline';
   base64El.style.textDecoration = 'none';
 }
 
 function onBase64Clicked(e) {
+  outputShowBase16 = false;
   outputShowBase64 = true;
   outputEl.textContent = outputBase64;
   buildLogEl.style.textDecoration = 'none';
+  base16El.style.textDecoration = 'none';
   base64El.style.textDecoration = 'underline';
 }
 
 watEditor.on('change', onWatChange);
-jsEditor.on('change', onJsChange);
 selectEl.addEventListener('change', onSelectChanged);
 downloadEl.addEventListener('click', onDownloadClicked);
 buildLogEl.addEventListener('click', onBuildLogClicked );
+base16El.addEventListener('click', onBase16Clicked );
 base64El.addEventListener('click', onBase64Clicked );
 
 for (var i = 0; i < examples.length; ++i) {
@@ -189,7 +178,6 @@ for (var i = 0; i < examples.length; ++i) {
   option.textContent = example.name;
   selectEl.appendChild(option);
 }
-selectEl.selectedIndex = 1;
+selectEl.selectedIndex = 0;
 setExample(selectEl.selectedIndex);
-
 });
